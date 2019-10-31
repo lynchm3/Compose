@@ -29,23 +29,47 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 fun NewsStory() {
-    val image = +imageResource(R.drawable.autumn)
+    val image = +imageResource(R.drawable.weather01d)
     MaterialTheme {
-        Column(crossAxisSize = LayoutSize.Expand, modifier = Spacing(16.dp)) {
-            Container(expanded = true, height = 180.dp) {
-                Clip(shape = RoundedCornerShape(8.dp)) {
+        Column(
+            crossAxisSize = LayoutSize.Expand,
+            crossAxisAlignment = CrossAxisAlignment.Center,
+            modifier = Spacing(16.dp)
+        ) {
+
+            Text(
+                "14°C",
+                style = (+themeTextStyle { h1 }).withOpacity(0.87f)
+            )
+            Row {
+                Text(
+                    "Clear Sky",
+                    style = (+themeTextStyle { h6 }).withOpacity(0.87f)
+                )
+                Container(width = 32.dp, height = 32.dp) {
                     DrawImage(image)
                 }
             }
-            HeightSpacer(16.dp)
-            Text("A day wandering through the sandhills in Shark " +
-                    "Fin Cove, and a few of the sights I saw",
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-                style = (+themeTextStyle { h6 }).withOpacity(0.87f))
-            Text("Davenport, California",
-                style = (+themeTextStyle { body2 }).withOpacity(0.87f))
-            Text("December 2018",
-                style = (+themeTextStyle { body2 }).withOpacity(0.6f))
+            Text(
+                "Humidity 46%",
+                style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+            )
+            Text(
+                "Max 15°C",
+                style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+            )
+            Text(
+                "Min 5°C",
+                style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+            )
+            Text(
+                "Wind 3km/h E",
+                style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+            )
+            Text(
+                "Cloudiness 23%",
+                style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+            )
         }
     }
 }
