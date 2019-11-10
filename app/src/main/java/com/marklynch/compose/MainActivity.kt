@@ -1,11 +1,10 @@
 package com.marklynch.compose
 
 import android.os.Bundle
+import android.widget.ImageButton
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.Composable
-import androidx.compose.state
-import androidx.compose.unaryPlus
+import androidx.compose.*
 import androidx.ui.foundation.DrawImage
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
@@ -16,7 +15,6 @@ import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
 
 
-import androidx.compose.Model
 import androidx.compose.frames.ModelList
 import androidx.ui.animation.Crossfade
 import androidx.ui.core.*
@@ -26,6 +24,8 @@ val image = +imageResource(R.drawable.weather01d)
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)
+
         setContent {
             WeatherApp()
         }
@@ -158,15 +158,15 @@ private fun DrawerButton(
 fun WeatherScreen(openDrawer: () -> Unit) {
 
     FlexColumn {
-        inflexible {
-            TopAppBar(
-                title = { Text(text = "Weather") },
-                navigationIcon = {
-                    DrawImage(image)
-                    Button(text = "DR", onClick = openDrawer, style = TextButtonStyle())
-                }
-            )
-        }
+//        inflexible {
+//            val x = TopAppBar(
+//                title = { Text(text = "Weather") },
+//                navigationIcon = {
+//                    DrawImage(image)
+//                    Button(text = "", onClick = openDrawer, style = TextButtonStyle())
+//                }
+//            )
+//        }
         flexible(flex = 1f) {
             MaterialTheme {
                 Column(
