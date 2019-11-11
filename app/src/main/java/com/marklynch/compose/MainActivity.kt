@@ -1,246 +1,287 @@
 package com.marklynch.compose
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.widget.ImageButton
-import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.*
+import androidx.compose.frames.ModelList
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
+import androidx.ui.animation.Crossfade
+import androidx.ui.core.Text
+import androidx.ui.core.dp
+import androidx.ui.core.setContent
 import androidx.ui.foundation.DrawImage
-import androidx.ui.foundation.shape.corner.RoundedCornerShape
-import androidx.ui.graphics.Color
+import androidx.ui.graphics.Image
 import androidx.ui.layout.*
 import androidx.ui.material.*
 import androidx.ui.material.surface.Surface
 import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
-
-
-import androidx.compose.frames.ModelList
-import androidx.ui.animation.Crossfade
-import androidx.ui.core.*
-
-val image = +imageResource(R.drawable.weather01d)
+import com.marklynch.compose.data.ManualLocation
+import com.marklynch.compose.livedata.WeatherResponse
+import com.marklynch.compose.viewmodel.MainViewModel
+import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
+
+    lateinit var weatherImage: State<Image>
+    lateinit var temperature: State<String>
+    lateinit var weatherDescription: State<String>
+    lateinit var maximumTemperature: State<String>
+    lateinit var minimumTemperature: State<String>
+    lateinit var wind: State<String>
+    lateinit var humidity: State<String>
+    lateinit var cloudiness: State<String>
+
+    lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)
+        window.decorView.systemUiVisibility =
+            (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)
+
+        viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
         setContent {
             WeatherApp()
         }
+
+
+        //Weather
+        viewModel.weatherLiveData.observe(this,
+            Observer<WeatherResponse> { weatherResponse ->
+                if (weatherResponse == null) {
+//                    showNoNetworkConnectionDialog()
+//                    swip_refresh_layout.isRefreshing = false
+                } else {
+                    updateWeatherUI()
+//                    if (alertDialog?.isShowing == true) {
+//                        alertDialog?.dismiss()
+//                    }
+//                    swip_refresh_layout.isRefreshing = false
+//                    tv_messaging.visibility = android.view.View.GONE
+//                    ll_weather_info.visibility = android.view.View.VISIBLE
+//                    tv_time_of_last_refresh.text = generateTimeString(viewModel.isUse24hrClock())
+                }
+            })
+
+        viewModel.fetchWeather(ManualLocation(1, "Loc", 5.0, 5.0))
     }
-}
 
+    private fun updateWeatherUI() {
+        if (viewModel.getWeather() == null)
+            return
 
-@Composable
-fun WeatherApp() {
+//        tv_messaging.visibility = View.GONE
+//        ll_weather_info.visibility = View.VISIBLE
 
-    val (drawerState, onDrawerStateChange) = +state { DrawerState.Closed }
+        val weatherResponse = viewModel.getWeather()
+        val useCelsius = true//viewModel.isUseCelsius()
+        val useKm = true//viewModel.isUseKm()
 
-    MaterialTheme(
-        colors = lightThemeColors
-//       , typography = themeTypography
-    ) {
-        ModalDrawerLayout(
-            drawerState = drawerState,
-            onStateChange = onDrawerStateChange,
-            gesturesEnabled = drawerState == DrawerState.Opened,
-            drawerContent = {
-                AppDrawer(
-                    currentScreen = JetnewsStatus.currentScreen,
-                    closeDrawer = { onDrawerStateChange(DrawerState.Closed) }
+        if (useCelsius == null || !useCelsius) {
+            temperature.value =
+                kelvinToFahrenheit(weatherResponse?.main?.temp).roundToInt().toString() + getString(
+                    R.string.degreesF
                 )
-            },
-            bodyContent = { AppContent { onDrawerStateChange(DrawerState.Opened) } }
-        )
-    }
-}
-
-
-@Composable
-private fun AppContent(openDrawer: () -> Unit) {
-    Crossfade(JetnewsStatus.currentScreen) { screen ->
-        Surface(color = +themeColor { background }) {
-
-            when (screen) {
-                is Screen.Weather -> WeatherScreen { openDrawer() }
-//                is Screen.Interests -> InterestsScreen { openDrawer() }
-//                is Screen.Article -> ArticleScreen(postId = screen.postId)
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun AppDrawer(
-    currentScreen: Screen,
-    closeDrawer: () -> Unit
-) {
-    Column(
-        crossAxisSize = LayoutSize.Expand,
-        mainAxisSize = LayoutSize.Expand
-    ) {
-        HeightSpacer(24.dp)
-        Padding(16.dp) {
-            Row {
-                DrawImage(image)
-                WidthSpacer(8.dp)
-                DrawImage(image)
-            }
-        }
-        Divider(color = Color(0x14333333))
-        DrawerButton(
-            icon = R.drawable.weather01d,
-            label = "Home",
-            isSelected = currentScreen == Screen.Weather
-        ) {
-            navigateTo(Screen.Weather)
-            closeDrawer()
+            maximumTemperature.value = getString(
+                R.string.maximum_temperature_F,
+                kelvinToFahrenheit(weatherResponse?.main?.tempMax).roundToInt()
+            )
+            minimumTemperature.value = getString(
+                R.string.minimum_temperature_F,
+                kelvinToFahrenheit(weatherResponse?.main?.tempMin).roundToInt()
+            )
+        } else {
+            temperature.value =
+                kelvinToCelsius(weatherResponse?.main?.temp).roundToInt().toString() + getString(R.string.degreesC)
+            maximumTemperature.value =
+                getString(
+                    R.string.maximum_temperature_C,
+                    kelvinToCelsius(weatherResponse?.main?.tempMax).roundToInt()
+                )
+            minimumTemperature.value =
+                getString(
+                    R.string.minimum_temperature_C,
+                    kelvinToCelsius(weatherResponse?.main?.tempMin).roundToInt()
+                )
         }
 
-        DrawerButton(
-            icon = R.drawable.weather01d,
-            label = "Interests",
-            isSelected = currentScreen == Screen.Interests
-        ) {
-            navigateTo(Screen.Interests)
-            closeDrawer()
+        if (useKm == null || !useKm) {
+            wind.value = getString(
+                R.string.wind_mi,
+                metresPerSecondToMilesPerHour(weatherResponse?.wind?.speed ?: 0.0).roundToInt(),
+                directionInDegreesToCardinalDirection(weatherResponse?.wind?.deg ?: 0.0)
+            )
+        } else {
+            wind.value = getString(
+                R.string.wind_km,
+                metresPerSecondToKmPerHour(weatherResponse?.wind?.speed ?: 0.0).roundToInt(),
+                directionInDegreesToCardinalDirection(weatherResponse?.wind?.deg ?: 0.0)
+            )
         }
-    }
-}
 
-@Composable
-private fun DrawerButton(
-    @DrawableRes icon: Int,
-    label: String,
-    isSelected: Boolean,
-    action: () -> Unit
-) {
-    val textIconColor = if (isSelected) {
-        +themeColor { primary }
-    } else {
-        (+themeColor { onSurface }).copy(alpha = 0.6f)
-    }
-    val backgroundColor = if (isSelected) {
-        (+themeColor { primary }).copy(alpha = 0.12f)
-    } else {
-        +themeColor { surface }
-    }
+//        weatherImage.value =
+//            imageResource(mapWeatherCodeToDrawable[weatherResponse?.weather?.getOrNull(0)?.icon])
+//                ?:
+//                        +imageResource(R.drawable.weather01d)
 
-    Padding(left = 8.dp, top = 8.dp, right = 8.dp) {
-        Surface(
-            color = backgroundColor,
-            shape = RoundedCornerShape(4.dp)
-        ) {
-            Button(onClick = action, style = TextButtonStyle()) {
-                Row(
-                    mainAxisSize = LayoutSize.Expand,
-                    crossAxisAlignment = CrossAxisAlignment.Center
-                ) {
-                    DrawImage(image)
-                    WidthSpacer(16.dp)
-                    Text(
-                        text = label,
-                        style = (+themeTextStyle { body2 }).copy(
-                            color = textIconColor
-                        )
-                    )
-                }
-            }
-        }
-    }
-}
+        weatherDescription.value =
+            weatherResponse?.weather?.getOrNull(0)?.description?.capitalizeWords() ?: ""
 
-
-@Composable
-fun WeatherScreen(openDrawer: () -> Unit) {
-
-    FlexColumn {
-//        inflexible {
-//            val x = TopAppBar(
-//                title = { Text(text = "Weather") },
-//                navigationIcon = {
-//                    DrawImage(image)
-//                    Button(text = "", onClick = openDrawer, style = TextButtonStyle())
-//                }
-//            )
+//        if (viewModel.getSelectedLocationId() == 0L && weatherResponse?.name != null) {
+//            spinnerList[0] =
+//                getString(R.string.current_location_brackets_name, weatherResponse.name)
+//            val spinner = findViewById<Spinner>(R.id.spinner_select_location)
+//            spinner.invalidate()
+//            spinnerArrayAdapter.notifyDataSetChanged()
 //        }
-        flexible(flex = 1f) {
-            MaterialTheme {
-                Column(
-                    crossAxisSize = LayoutSize.Expand,
-                    crossAxisAlignment = CrossAxisAlignment.Center,
-                    modifier = Spacing(16.dp)
-                ) {
+//        tv_time_of_last_refresh.text = generateTimeString(viewModel.isUse24hrClock())
 
-                    Text(
-                        "14°C",
-                        style = (+themeTextStyle { h1 }).withOpacity(0.87f)
-                    )
-                    Row {
-                        Text(
-                            "Clear Sky",
-                            style = (+themeTextStyle { h6 }).withOpacity(0.87f)
-                        )
-                        Container(width = 32.dp, height = 32.dp) {
-                            DrawImage(image)
-                        }
-                    }
-                    Text(
-                        "Humidity 46%",
-                        style = (+themeTextStyle { body1 }).withOpacity(0.6f)
-                    )
-                    Text(
-                        "Max 15°C",
-                        style = (+themeTextStyle { body1 }).withOpacity(0.6f)
-                    )
-                    Text(
-                        "Min 5°C",
-                        style = (+themeTextStyle { body1 }).withOpacity(0.6f)
-                    )
-                    Text(
-                        "Wind 3km/h E",
-                        style = (+themeTextStyle { body1 }).withOpacity(0.6f)
-                    )
-                    Text(
-                        "Cloudiness 23%",
-                        style = (+themeTextStyle { body1 }).withOpacity(0.6f)
-                    )
+        humidity.value =
+            getString(R.string.humidity_percentage, weatherResponse?.main?.humidity?.roundToInt())
+        cloudiness.value =
+            getString(R.string.cloudiness_percentage, weatherResponse?.clouds?.all?.roundToInt())
+
+    }
+
+
+    @Composable
+    fun WeatherApp() {
+        temperature = +state { "TEMP" }
+        weatherDescription = +state { "DESC" }
+        weatherImage = +state { +imageResource(R.drawable.weather01d) }
+        maximumTemperature = +state { "MAX" }
+        minimumTemperature = +state { "MIN" }
+        wind = +state { "WIND" }
+        humidity = +state { "HUMIDITY" }
+        cloudiness = +state { "CLOUD" }
+
+        val (drawerState, onDrawerStateChange) = +state { DrawerState.Closed }
+
+        MaterialTheme(
+            colors = lightThemeColors
+//       , typography = themeTypography
+        ) { AppContent() }
+    }
+
+
+    @Composable
+    private fun AppContent() {
+        Crossfade(JetnewsStatus.currentScreen) { screen ->
+            Surface(color = +themeColor { background }) {
+
+                when (screen) {
+                    is Screen.Weather -> WeatherScreen {}
+//                is Screen.Interests -> InterestsScreen {}
+//                is Screen.Article -> ArticleScreen(postId = screen.postId)
                 }
             }
         }
     }
+
+    @Composable
+    fun WeatherScreen(openDrawer: () -> Unit) {
+
+        FlexColumn {
+            flexible(flex = 1f) {
+                MaterialTheme {
+                    Column(
+                        crossAxisSize = LayoutSize.Expand,
+                        crossAxisAlignment = CrossAxisAlignment.Center,
+                        modifier = Spacing(16.dp)
+                    ) {
+
+                        Text(
+                            temperature.value,
+                            style = (+themeTextStyle { h1 }).withOpacity(0.87f)
+                        )
+
+                        Row {
+                            Text(
+                                weatherDescription.value,
+                                style = (+themeTextStyle { h6 }).withOpacity(0.87f)
+                            )
+                            Container(width = 32.dp, height = 32.dp) {
+                                DrawImage(weatherImage.value)
+                            }
+                        }
+                        Text(
+                            humidity.value,
+                            style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+                        )
+                        Text(
+                            maximumTemperature.value,
+                            style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+                        )
+                        Text(
+                            minimumTemperature.value,
+                            style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+                        )
+                        Text(
+                            wind.value,
+                            style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+                        )
+                        Text(
+                            cloudiness.value,
+                            style = (+themeTextStyle { body1 }).withOpacity(0.6f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun DefaultPreview() {
+        WeatherApp()
+    }
+
+    /**
+     * Class defining the screens we have in the app: home, article details and interests
+     */
+    sealed class Screen {
+        object Weather : Screen()
+        data class Article(val postId: String) : Screen()
+        object Interests : Screen()
+    }
+
+    @Model
+    object JetnewsStatus {
+        var currentScreen: Screen = Screen.Weather
+        val favorites = ModelList<String>()
+        val selectedTopics = ModelList<String>()
+    }
+
+    /**
+     * Temporary solution pending navigation support.
+     */
+    fun navigateTo(destination: Screen) {
+        JetnewsStatus.currentScreen = destination
+    }
 }
 
-@Preview
-@Composable
-fun DefaultPreview() {
-    WeatherApp()
+fun kelvinToCelsius(kelvin: Double?) = if (kelvin == null) 0.0 else kelvin - 273.15
+fun kelvinToFahrenheit(kelvin: Double?) = if (kelvin == null) 0.0 else kelvin * 9 / 5 - 459.67
+
+fun metresPerSecondToKmPerHour(metresPerSecond: Double) = (metresPerSecond * 3.6)
+fun metresPerSecondToMilesPerHour(metresPerSecond: Double) = (metresPerSecond * 2.23694)
+
+fun directionInDegreesToCardinalDirection(directionInDegrees: Double): String {
+    val directions = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW", "N")
+    return directions[(directionInDegrees % 360 / 45).roundToInt()]
 }
 
-/**
- * Class defining the screens we have in the app: home, article details and interests
- */
-sealed class Screen {
-    object Weather : Screen()
-    data class Article(val postId: String) : Screen()
-    object Interests : Screen()
+@SuppressLint("DefaultLocale")
+fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.capitalize() }
+
+fun <T> MutableLiveData<T>.forceRefresh() {
+    this.value = this.value
 }
 
-@Model
-object JetnewsStatus {
-    var currentScreen: Screen = Screen.Weather
-    val favorites = ModelList<String>()
-    val selectedTopics = ModelList<String>()
-}
 
-/**
- * Temporary solution pending navigation support.
- */
-fun navigateTo(destination: Screen) {
-    JetnewsStatus.currentScreen = destination
-}
 
 
