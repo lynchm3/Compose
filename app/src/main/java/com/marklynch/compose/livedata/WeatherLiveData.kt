@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -28,6 +29,8 @@ open class WeatherLiveData : MutableLiveData<WeatherResponse>() {
 
 
         GlobalScope.launch {
+
+            delay(1_000)
 
             val retrofit = getRetrofitInstance("https://api.openweathermap.org")
 

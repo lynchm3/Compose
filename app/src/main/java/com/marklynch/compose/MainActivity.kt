@@ -1,10 +1,10 @@
 package com.marklynch.compose
 
 import android.annotation.SuppressLint
+import android.drm.DrmStore
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.*
-import androidx.compose.frames.ModelList
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
@@ -26,16 +26,20 @@ import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var weatherImage: State<Image>
-    lateinit var temperature: State<String>
-    lateinit var weatherDescription: State<String>
-    lateinit var maximumTemperature: State<String>
-    lateinit var minimumTemperature: State<String>
-    lateinit var wind: State<String>
-    lateinit var humidity: State<String>
-    lateinit var cloudiness: State<String>
+    //Weather screen
+    private lateinit var weatherImage: State<Image>
+    private lateinit var temperature: State<String>
+    private lateinit var weatherDescription: State<String>
+    private lateinit var maximumTemperature: State<String>
+    private lateinit var minimumTemperature: State<String>
+    private lateinit var wind: State<String>
+    private lateinit var humidity: State<String>
+    private lateinit var cloudiness: State<String>
 
-    lateinit var viewModel: MainViewModel
+    //Messaging screen
+    private lateinit var message: State<String>
+
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,45 +149,40 @@ class MainActivity : AppCompatActivity() {
         cloudiness.value =
             getString(R.string.cloudiness_percentage, weatherResponse?.clouds?.all?.roundToInt())
 
+        message.value = ""
     }
 
 
     @Composable
     fun WeatherApp() {
-        temperature = +state { "TEMP" }
-        weatherDescription = +state { "DESC" }
+        temperature = +state { "" }
+        weatherDescription = +state { "" }
         weatherImage = +state { +imageResource(R.drawable.weather01d) }
-        maximumTemperature = +state { "MAX" }
-        minimumTemperature = +state { "MIN" }
-        wind = +state { "WIND" }
-        humidity = +state { "HUMIDITY" }
-        cloudiness = +state { "CLOUD" }
+        maximumTemperature = +state { "" }
+        minimumTemperature = +state { "" }
+        wind = +state { "" }
+        humidity = +state { "" }
+        cloudiness = +state { "" }
 
-        val (drawerState, onDrawerStateChange) = +state { DrawerState.Closed }
+        message = +state { "FETCHING YOUR WEATHER..." }
 
         MaterialTheme(
             colors = lightThemeColors
-//       , typography = themeTypography
         ) { AppContent() }
     }
 
-
     @Composable
     private fun AppContent() {
-        Crossfade(JetnewsStatus.currentScreen) { screen ->
+        Crossfade(WeatherAppStatus.currentScreen) { screen ->
             Surface(color = +themeColor { background }) {
-
-                when (screen) {
-                    is Screen.Weather -> WeatherScreen {}
-//                is Screen.Interests -> InterestsScreen {}
-//                is Screen.Article -> ArticleScreen(postId = screen.postId)
-                }
+                WeatherScreen()
             }
         }
     }
 
+
     @Composable
-    fun WeatherScreen(openDrawer: () -> Unit) {
+    fun WeatherScreen() {
 
         FlexColumn {
             flexible(flex = 1f) {
@@ -228,6 +227,10 @@ class MainActivity : AppCompatActivity() {
                             cloudiness.value,
                             style = (+themeTextStyle { body1 }).withOpacity(0.6f)
                         )
+                        Text(
+                            message.value,
+                            style = (+themeTextStyle { h6 }).withOpacity(0.87f)
+                        )
                     }
                 }
             }
@@ -245,22 +248,16 @@ class MainActivity : AppCompatActivity() {
      */
     sealed class Screen {
         object Weather : Screen()
-        data class Article(val postId: String) : Screen()
-        object Interests : Screen()
+        object Messaging : Screen()
     }
 
     @Model
-    object JetnewsStatus {
-        var currentScreen: Screen = Screen.Weather
-        val favorites = ModelList<String>()
-        val selectedTopics = ModelList<String>()
+    object WeatherAppStatus {
+        var currentScreen: Screen = Screen.Messaging
     }
 
-    /**
-     * Temporary solution pending navigation support.
-     */
     fun navigateTo(destination: Screen) {
-        JetnewsStatus.currentScreen = destination
+        WeatherAppStatus.currentScreen = destination
     }
 }
 
